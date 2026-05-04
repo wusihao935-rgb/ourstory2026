@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>我们的小宇宙</title>
+<!--
+  ╔══════════════════════════════════════╗
+  ║  需要用户修改的配置项：               ║
+  ║  1. DeepSeek API Key（搜索 YOUR_DEEPSEEK_API_KEY） ║
+  ║  2. 默认密码（搜索 ourstar2026）     ║
+  ╚══════════════════════════════════════╝
+-->
+<style>
+/* ========== RESET & BASE ========== */
+:root { --romantic-font: "Ma Shan Zheng", "STKaiti", "KaiTi", "Microsoft YaHei", cursive, serif; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+body { background: #0a0a2e; color: #e0e0ff; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+input, textarea { user-select: text; -webkit-user-select: text; }
+button, input, textarea { font: inherit; }
+
+/* ========== STAR CANVAS ========== */
+#starCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+
+/* ========== PAGE CONTAINERS ========== */
+.page { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.6s ease;
+  overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
+.page.active { opacity: 1; pointer-events: auto; }
+
+/* ========== LOGIN PAGE ========== */
+#loginPage { z-index: 10; }
+.login-card { position: relative; z-index: 2; width: 88%; max-width: 380px;
+  background: rgba(255,255,255,0.06); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255,255,255,0.12); border-radius: 24px; padding: 40px 28px 36px;
+  text-align: center; box-shadow: 0 8px 48px rgba(0,0,0,0.4); }
+.login-card h1 { font-family: var(--romantic-font); font-size: 32px; color: #ffe9a7; margin-bottom: 8px; letter-spacing: 2px; }
+.login-card p { font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 28px; }
+.login-card input { width: 100%; height: 50px; border: 1px solid rgba(255,255,255,0.2); border-radius: 14px;
+  background: rgba(255,255,255,0.08); color: #fff; font-size: 16px; text-align: center; outline: none;
+  padding: 0 16px; transition: border-color 0.3s; letter-spacing: 2px; }
+.login-card input:focus { border-color: rgba(255,215,0,0.6); }
+.login-card input::placeholder { color: rgba(255,255,255,0.25); letter-spacing: 0; }
+.login-card button { width: 100%; height: 50px; border: none; border-radius: 14px;
+  background: linear-gradient(135deg, #ffd700, #ffaa00); color: #1a1a2e; font-size: 17px;
+  font-weight: 600; margin-top: 18px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+  letter-spacing: 2px; }
+.login-card button:active { transform: scale(0.96); box-shadow: 0 0 24px rgba(255,215,0,0.5); }
+.login-error { color: #ff6b6b; font-size: 13px; margin-top: 12px; min-height: 20px; transition: all 0.3s; }
+
+/* shake animation */
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(6px); }
+}
+.shake { animation: shake 0.5s ease; }
+
+/* ========== MAIN PAGE ========== */
+#mainPage { justify-content: flex-start; padding-top: 60px; }
+.counter-section { position: relative; z-index: 2; text-align: center; padding: 20px; }
+.counter-label { font-size: 14px; color: rgba(255,255,255,0.5); margin-bottom: 8px; letter-spacing: 2px; }
+.counter-digits { font-size: 28px; font-weight: 700; letter-spacing: 1px;
+  background: linear-gradient(135deg, #ffd700, #ff8c00, #ffd700); background-size: 200% 200%;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  animation: glowShift 3s ease-in-out infinite; line-height: 1.4; }
+@keyframes glowShift {
+  0%,100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+@keyframes heartbeat {
+  0%,100% { transform: scale(1); }
+  10% { transform: scale(1.04); }
+  20% { transform: scale(1); }
+  30% { transform: scale(1.03); }
+  40% { transform: scale(1); }
+}
+.heartbeat { animation: heartbeat 1.5s ease-in-out infinite; display: inline-block; }
+
+.moon-toggle { position: fixed; top: 20px; right: 20px; z-index: 20; width: 48px; height: 48px;
+  border-radius: 50%; background: rgba(255,255,255,0.08); border: none; cursor: pointer;
+  font-size: 26px; display: none; align-items: center; justify-content: center;
+  transition: background 0.3s; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.moon-toggle:active { background: rgba(255,255,255,0.2); }
+
+/* nav tabs */
+.nav-tabs { position: fixed; bottom: 0; left: 0; right: 0; z-index: 20;
+  display: none; background: rgba(10,10,46,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255,255,255,0.08); padding: 6px 0 env(safe-area-inset-bottom, 8px) 0; }
+.nav-tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 10px 0; cursor: pointer; transition: all 0.3s; font-size: 13px; color: rgba(255,255,255,0.4);
+  background: none; border: none; gap: 4px; min-height: 56px; }
+.nav-tab .icon { font-size: 22px; transition: transform 0.3s; }
+.nav-tab.active { color: #ffd700; }
+.nav-tab.active .icon { transform: scale(1.15); }
+.nav-tab:active { opacity: 0.7; }
+
+/* ========== TIMELINE PAGE ========== */
+#timelinePage { justify-content: flex-start; padding-top: 40px; padding-bottom: 120px; }
+.timeline-title { position: relative; z-index: 2; font-family: var(--romantic-font); font-size: 28px;
+  color: #ffe9a7; margin: 20px 0 16px; }
+.timeline-scroll { position: relative; z-index: 2; width: 100%; display: flex; overflow-x: auto;
+  scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; padding: 0 16px 16px;
+  gap: 16px; scrollbar-width: none; }
+.timeline-scroll::-webkit-scrollbar { display: none; }
+
+.memory-card { flex: 0 0 78vw; max-width: 340px; scroll-snap-align: center;
+  background: rgba(255,255,255,0.06); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 20px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3); transition: transform 0.3s; }
+.memory-card:active { transform: scale(0.97); }
+.memory-card .mem-date { font-size: 12px; color: #ffd700; margin-bottom: 6px; letter-spacing: 1px; }
+.memory-card .mem-title { font-family: var(--romantic-font); font-size: 20px; color: #ffe9a7; margin-bottom: 8px; }
+.memory-card .mem-img { width: 100%; height: 160px; object-fit: cover; border-radius: 12px; margin-bottom: 10px; background: rgba(255,255,255,0.04); }
+.memory-card .mem-text { font-size: 14px; color: rgba(255,255,255,0.7); line-height: 1.6; }
+
+.add-memory-btn { position: relative; z-index: 2; margin: 20px; padding: 14px 32px;
+  background: rgba(255,215,0,0.15); border: 1px dashed rgba(255,215,0,0.4); border-radius: 16px;
+  color: #ffd700; font-size: 15px; cursor: pointer; transition: all 0.3s; }
+.add-memory-btn:active { background: rgba(255,215,0,0.25); }
+
+/* long-press hint */
+.long-press-hint { position: relative; z-index: 2; font-size: 11px; color: rgba(255,255,255,0.25); margin-top: 4px; }
+
+/* ========== LETTER PAGE ========== */
+#letterPage { justify-content: flex-start; padding-top: 40px; padding-bottom: 120px; }
+.letter-title { position: relative; z-index: 2; font-family: var(--romantic-font); font-size: 28px;
+  color: #ffe9a7; margin: 20px 0 8px; }
+.letter-date { position: relative; z-index: 2; font-size: 13px; color: rgba(255,255,255,0.4); margin-bottom: 20px; }
+.letter-paper { position: relative; z-index: 2; width: 88%; max-width: 400px;
+  background: linear-gradient(135deg, rgba(255,245,220,0.12), rgba(255,235,200,0.08));
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 28px 24px;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.3); min-height: 200px; }
+.letter-content { font-size: 15px; line-height: 1.9; color: rgba(255,255,255,0.85); white-space: pre-wrap; }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.letter-content.reveal { animation: fadeInUp 0.8s ease forwards; }
+
+.letter-loading { display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 40px; gap: 16px; }
+@keyframes heartBeat {
+  0%,100% { transform: scale(1); }
+  30% { transform: scale(1.25); }
+  50% { transform: scale(1); }
+  70% { transform: scale(1.2); }
+}
+.loading-heart { font-size: 40px; animation: heartBeat 0.8s ease-in-out infinite; }
+
+.refresh-btn { position: relative; z-index: 2; margin-top: 20px; width: 48px; height: 48px;
+  border-radius: 50%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+  font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.3s; color: #fff; }
+.refresh-btn:active { background: rgba(255,255,255,0.18); transform: rotate(30deg); }
+
+/* ========== SPACE PAGE ========== */
+#spacePage { justify-content: flex-start; padding-top: 30px; padding-bottom: 120px; }
+.space-title { position: relative; z-index: 2; font-family: var(--romantic-font); font-size: 28px;
+  color: #ffe9a7; margin: 16px 0; }
+.space-section { position: relative; z-index: 2; width: 90%; max-width: 400px; margin-bottom: 24px; }
+.space-section h3 { font-size: 16px; color: rgba(255,255,255,0.6); margin-bottom: 12px; letter-spacing: 1px; }
+
+/* perspective toggle */
+.perspective-toggle { position: relative; z-index: 2; display: flex; background: rgba(255,255,255,0.06);
+  border-radius: 20px; padding: 4px; margin-bottom: 16px; }
+.perspective-toggle button { flex: 1; padding: 10px 16px; border-radius: 16px; border: none;
+  font-size: 14px; cursor: pointer; transition: all 0.3s; background: transparent; color: rgba(255,255,255,0.5); }
+.perspective-toggle button.active { background: rgba(255,215,0,0.75); color: #1a1a2e; font-weight: 600; }
+
+/* sticky notes */
+.sticky-board { position: relative; z-index: 2; width: 90%; max-width: 400px; min-height: 120px;
+  padding: 8px; display: flex; flex-wrap: wrap; gap: 12px; }
+.sticky-note { padding: 16px; border-radius: 4px 16px 4px 16px; font-size: 14px;
+  box-shadow: 2px 3px 8px rgba(0,0,0,0.3); cursor: grab; position: relative;
+  user-select: none; -webkit-user-drag: element; transition: box-shadow 0.2s; word-break: break-word; }
+.sticky-note:active { cursor: grabbing; box-shadow: 4px 6px 16px rgba(0,0,0,0.5); }
+.sticky-note .delete-sticky { position: absolute; top: 4px; right: 8px; font-size: 14px;
+  opacity: 0; transition: opacity 0.3s; background: none; border: none; cursor: pointer; color: rgba(0,0,0,0.4); }
+.sticky-note:hover .delete-sticky, .sticky-note.show-delete .delete-sticky { opacity: 1; }
+.sticky-note .sticky-author { font-size: 10px; opacity: 0.5; margin-top: 6px; }
+
+.add-msg-form { display: flex; gap: 8px; width: 90%; max-width: 400px; position: relative; z-index: 2; margin-top: 8px; }
+.add-msg-form input { flex: 1; height: 44px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.06); color: #fff; padding: 0 14px; font-size: 14px; outline: none; }
+.add-msg-form input:focus { border-color: rgba(255,215,0,0.5); }
+.add-msg-form button { height: 44px; width: 44px; border-radius: 12px; border: none;
+  background: rgba(255,215,0,0.2); color: #ffd700; font-size: 20px; cursor: pointer; }
+
+/* wishlist */
+.wish-list { position: relative; z-index: 2; width: 90%; max-width: 400px; }
+.wish-item { display: flex; align-items: center; gap: 10px; padding: 12px 14px; margin-bottom: 8px;
+  background: rgba(255,255,255,0.04); border-radius: 12px; font-size: 14px;
+  border: 1px solid rgba(255,255,255,0.06); transition: all 0.5s; }
+.wish-item.matched { border-color: rgba(255,215,0,0.4); background: rgba(255,215,0,0.1);
+  box-shadow: 0 0 20px rgba(255,215,0,0.15); animation: matchGlow 2s ease-in-out infinite; }
+@keyframes matchGlow {
+  0%,100% { box-shadow: 0 0 12px rgba(255,215,0,0.1); }
+  50% { box-shadow: 0 0 28px rgba(255,215,0,0.3); }
+}
+.wish-item .wish-author { font-size: 10px; color: rgba(255,255,255,0.3); }
+.wish-item .match-badge { font-size: 11px; color: #ffd700; margin-left: auto; white-space: nowrap; }
+.wish-item button { background: none; border: none; color: rgba(255,255,255,0.2); font-size: 16px; cursor: pointer;
+  padding: 4px 8px; min-width: 32px; min-height: 32px; }
+
+.add-wish-form { display: flex; gap: 8px; width: 100%; margin-top: 8px; }
+.add-wish-form input { flex: 1; height: 44px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.06); color: #fff; padding: 0 14px; font-size: 14px; outline: none; }
+.add-wish-form button { height: 44px; padding: 0 18px; border-radius: 12px; border: none;
+  background: rgba(255,215,0,0.2); color: #ffd700; font-size: 14px; cursor: pointer; white-space: nowrap; }
+
+/* ========== ADMIN PANEL ========== */
+.admin-gear { position: fixed; bottom: 100px; right: 20px; z-index: 30; width: 44px; height: 44px;
+  border-radius: 50%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15);
+  font-size: 20px; cursor: pointer; display: none; align-items: center; justify-content: center;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); color: #fff; }
+.admin-gear.visible { display: flex; }
+
+.admin-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 40;
+  background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+.admin-overlay.visible { display: flex; }
+.admin-panel { width: 88%; max-width: 380px; background: rgba(20,20,50,0.95);
+  border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 28px 22px;
+  box-shadow: 0 8px 48px rgba(0,0,0,0.6); }
+.admin-panel h2 { font-family: var(--romantic-font); font-size: 22px; color: #ffe9a7; margin-bottom: 20px; }
+.admin-panel label { font-size: 12px; color: rgba(255,255,255,0.5); display: block; margin-bottom: 4px; margin-top: 14px; }
+.admin-panel input { width: 100%; height: 44px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.06); color: #fff; padding: 0 12px; font-size: 14px; outline: none; }
+.admin-panel input:focus { border-color: rgba(255,215,0,0.5); }
+.admin-panel .btn-row { display: flex; gap: 10px; margin-top: 20px; }
+.admin-panel .btn-row button { flex: 1; height: 44px; border-radius: 12px; border: none; font-size: 14px;
+  font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.admin-save { background: linear-gradient(135deg, #ffd700, #ffaa00); color: #1a1a2e; }
+.admin-close { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); }
+.admin-danger { background: rgba(255,80,80,0.2); color: #ff6b6b; width: 100%; margin-top: 8px; }
+
+/* ========== MODAL ========== */
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 50;
+  background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+.modal-overlay.visible { display: flex; }
+.modal-box { width: 88%; max-width: 380px; background: rgba(20,20,50,0.95);
+  border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 28px 22px;
+  box-shadow: 0 8px 48px rgba(0,0,0,0.6); }
+.modal-box h3 { font-family: var(--romantic-font); font-size: 20px; color: #ffe9a7; margin-bottom: 16px; }
+.modal-box input, .modal-box textarea { width: 100%; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.06); color: #fff; padding: 10px 12px; font-size: 14px; outline: none;
+  margin-bottom: 12px; font-family: inherit; }
+.modal-box textarea { resize: vertical; min-height: 80px; }
+.modal-box input:focus, .modal-box textarea:focus { border-color: rgba(255,215,0,0.5); }
+.upload-zone { display: flex; align-items: center; justify-content: center; min-height: 96px; margin-bottom: 12px;
+  border: 1px dashed rgba(255,215,0,0.38); border-radius: 14px; background: rgba(255,215,0,0.07);
+  color: rgba(255,233,167,0.82); text-align: center; cursor: pointer; padding: 14px; transition: all 0.2s; }
+.upload-zone.drag-over { background: rgba(255,215,0,0.14); border-color: rgba(255,215,0,0.78); transform: scale(0.99); }
+.upload-zone strong { display: block; color: #ffd700; margin-bottom: 4px; }
+.upload-zone span { display: block; font-size: 12px; color: rgba(255,255,255,0.42); line-height: 1.5; }
+.image-preview { display: none; position: relative; margin-bottom: 12px; border-radius: 14px; overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); }
+.image-preview.visible { display: block; }
+.image-preview img { display: block; width: 100%; max-height: 180px; object-fit: cover; }
+.image-preview button { position: absolute; right: 8px; top: 8px; border: none; border-radius: 999px;
+  background: rgba(0,0,0,0.58); color: #fff; padding: 7px 10px; cursor: pointer; }
+.modal-box .btn-row { display: flex; gap: 10px; }
+.modal-box .btn-row button { flex: 1; height: 44px; border-radius: 12px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; }
+.modal-save { background: linear-gradient(135deg, #ffd700, #ffaa00); color: #1a1a2e; }
+.modal-cancel { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); }
+
+.empty-state { width: 100%; padding: 20px 16px; border: 1px dashed rgba(255,255,255,0.12); border-radius: 16px;
+  color: rgba(255,255,255,0.45); font-size: 13px; line-height: 1.7; text-align: center; background: rgba(255,255,255,0.035); }
+.space-helper { position: relative; z-index: 2; width: 90%; max-width: 400px; margin: -4px 0 14px;
+  color: rgba(255,255,255,0.42); font-size: 12px; line-height: 1.6; text-align: center; }
+.add-msg-form textarea { flex: 1; min-height: 44px; max-height: 120px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.06); color: #fff; padding: 11px 14px; font-size: 14px; outline: none; resize: vertical; }
+.delete-sticky { opacity: 0.68 !important; }
+.wish-item { align-items: flex-start; flex-wrap: wrap; }
+.wish-item.completed { opacity: 0.68; }
+.wish-item.completed .wish-text { text-decoration: line-through; }
+.wish-main { flex: 1; min-width: 150px; display: flex; align-items: center; gap: 8px; }
+.wish-actions { display: flex; gap: 6px; margin-left: auto; }
+.wish-actions button { border-radius: 999px; background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.72);
+  border: 1px solid rgba(255,255,255,0.08); font-size: 12px; padding: 5px 9px; min-height: 30px; cursor: pointer; }
+.wish-actions .wish-done-btn { color: #ffd700; border-color: rgba(255,215,0,0.22); }
+.toast { position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom, 0px)); z-index: 80;
+  transform: translateX(-50%) translateY(12px); max-width: min(360px, 86vw); padding: 11px 15px; border-radius: 999px;
+  background: rgba(20,20,50,0.92); border: 1px solid rgba(255,255,255,0.12); color: #ffe9a7; font-size: 13px;
+  opacity: 0; pointer-events: none; transition: all 0.24s ease; box-shadow: 0 8px 30px rgba(0,0,0,0.38); }
+.toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ========== DAY MODE ========== */
+body.day-mode { background: linear-gradient(180deg, #fff5e6 0%, #ffe0c0 50%, #ffd4a8 100%); }
+body.day-mode #starCanvas { opacity: 0.15; }
+body.day-mode .page { color: #5a4030; }
+body.day-mode .counter-digits { background: linear-gradient(135deg, #e8960a, #d4721a, #e8960a); background-size: 200% 200%;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+body.day-mode .nav-tabs { background: rgba(255,245,230,0.85); border-top-color: rgba(0,0,0,0.08); }
+body.day-mode .nav-tab { color: rgba(100,70,40,0.5); }
+body.day-mode .nav-tab.active { color: #d4721a; }
+body.day-mode .memory-card { background: rgba(255,255,255,0.4); border-color: rgba(0,0,0,0.08); }
+body.day-mode .memory-card .mem-title { color: #8b5e3c; }
+body.day-mode .memory-card .mem-text { color: rgba(80,50,30,0.8); }
+body.day-mode .letter-paper { background: linear-gradient(135deg, rgba(255,250,240,0.6), rgba(255,240,220,0.4)); border-color: rgba(0,0,0,0.08); }
+body.day-mode .letter-content { color: rgba(80,50,30,0.9); }
+body.day-mode .sticky-note { box-shadow: 2px 3px 8px rgba(0,0,0,0.12); }
+body.day-mode .admin-panel, body.day-mode .modal-box { background: rgba(255,250,240,0.95); border-color: rgba(0,0,0,0.1); }
+body.day-mode .admin-panel input, body.day-mode .modal-box input, body.day-mode .modal-box textarea,
+body.day-mode .add-msg-form input, body.day-mode .add-msg-form textarea, body.day-mode .add-wish-form input { background: rgba(0,0,0,0.04); color: #5a4030; border-color: rgba(0,0,0,0.15); }
+body.day-mode .refresh-btn { color: #5a4030; background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); }
+body.day-mode .empty-state { color: rgba(90,64,48,0.52); border-color: rgba(0,0,0,0.12); background: rgba(255,255,255,0.36); }
+body.day-mode .space-helper { color: rgba(90,64,48,0.52); }
+body.day-mode .upload-zone { background: rgba(212,114,26,0.08); border-color: rgba(212,114,26,0.35); color: rgba(90,64,48,0.72); }
+body.day-mode .upload-zone strong { color: #d4721a; }
+body.day-mode .upload-zone span { color: rgba(90,64,48,0.48); }
+body.day-mode .wish-actions button { color: rgba(90,64,48,0.72); border-color: rgba(90,64,48,0.14); background: rgba(255,255,255,0.32); }
+body.day-mode .toast { background: rgba(255,250,240,0.96); color: #8b5e3c; border-color: rgba(0,0,0,0.1); }
+</style>
+</head>
+<body>
+
+<!-- Starry Background Canvas -->
+<canvas id="starCanvas"></canvas>
+
+<!-- ==================== LOGIN PAGE ==================== -->
+<div id="loginPage" class="page active">
+  <div class="login-card">
+    <h1>欢迎回到我们的小宇宙 🌙</h1>
+    <p>输入我们的密码，进入属于我们的星空</p>
+    <input type="password" id="passwordInput" placeholder="输入密码" maxlength="30" autocomplete="off">
+    <button id="loginBtn">进入小宇宙</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<!-- Moon Toggle (outside pages so always visible after login) -->
+<button class="moon-toggle" id="moonToggle" title="切换日/夜模式">🌙</button>
+
+<!-- Bottom Navigation (visible after login) -->
+<nav class="nav-tabs" aria-label="页面导航">
+  <button class="nav-tab active" data-page="main" type="button">
+    <span class="icon">⏳</span>
+    <span>计时</span>
+  </button>
+  <button class="nav-tab" data-page="timeline" type="button">
+    <span class="icon">💫</span>
+    <span>时光</span>
+  </button>
+  <button class="nav-tab" data-page="letter" type="button">
+    <span class="icon">💌</span>
+    <span>情书</span>
+  </button>
+  <button class="nav-tab" data-page="space" type="button">
+    <span class="icon">✨</span>
+    <span>空间</span>
+  </button>
+</nav>
+
+<!-- ==================== MAIN PAGE ==================== -->
+<div id="mainPage" class="page">
+  <div class="counter-section">
+    <div class="counter-label">我们已经在一起</div>
+    <div class="counter-digits heartbeat" id="counterDisplay">--</div>
+  </div>
+</div>
+
+<!-- ==================== TIMELINE PAGE ==================== -->
+<div id="timelinePage" class="page">
+  <div class="timeline-title">💫 我们的时光</div>
+  <div class="timeline-scroll" id="timelineScroll"></div>
+  <button class="add-memory-btn" id="addMemoryBtn">+ 添加回忆</button>
+  <div class="long-press-hint">长按回忆卡片5秒可编辑或删除</div>
+</div>
+
+<!-- ==================== LETTER PAGE ==================== -->
+<div id="letterPage" class="page">
+  <div class="letter-title">💌 今日情书</div>
+  <div class="letter-date" id="letterDate"></div>
+  <div class="letter-paper" id="letterPaper">
+    <div class="letter-loading" id="letterLoading">
+      <div class="loading-heart">💓</div>
+      <span style="font-size:13px;color:rgba(255,255,255,0.4)">正在为你写一封情书...</span>
+    </div>
+    <div class="letter-content" id="letterContent" style="display:none;"></div>
+  </div>
+  <button class="refresh-btn" id="refreshLetterBtn">🔄</button>
+</div>
+
+<!-- ==================== SPACE PAGE ==================== -->
+<div id="spacePage" class="page">
+  <div class="space-title">✨ 我们的互动空间</div>
+
+  <!-- Perspective Toggle -->
+  <div class="perspective-toggle" id="perspectiveToggle">
+    <button data-perspective="me" class="active">👦 我的视角</button>
+    <button data-perspective="her">👧 她的视角</button>
+  </div>
+  <div class="space-helper">先选择是谁在写，再留言或添加愿望；所有操作都直接可见，不需要猜长按。</div>
+
+  <!-- Message Board -->
+  <div class="space-section">
+    <h3>💬 爱情留言板</h3>
+    <div class="sticky-board" id="stickyBoard"></div>
+    <div class="add-msg-form">
+      <textarea id="newMsgInput" placeholder="写下一句想说的话..." maxlength="140"></textarea>
+      <button id="sendMsgBtn">💌</button>
+    </div>
+  </div>
+
+  <!-- Wishlist -->
+  <div class="space-section">
+    <h3>📝 想一起做的事</h3>
+    <div class="wish-list" id="wishList"></div>
+    <div class="add-wish-form">
+      <input type="text" id="newWishInput" placeholder="添加一个新愿望..." maxlength="60">
+      <button id="addWishBtn">添加</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== ADMIN GEAR ==================== -->
+<button class="admin-gear" id="adminGear" title="管理设置">⚙️</button>
+
+<!-- ==================== ADMIN PANEL ==================== -->
+<div class="admin-overlay" id="adminOverlay">
+  <div class="admin-panel">
+    <h2>⚙️ 后台管理</h2>
+    <label>相识纪念日</label>
+    <input type="date" id="adminAnniversary">
+    <label>登录密码</label>
+    <input type="text" id="adminPassword" maxlength="30">
+    <div class="btn-row">
+      <button class="admin-save" id="adminSaveBtn">保存设置</button>
+      <button class="admin-close" id="adminCloseBtn">关闭</button>
+    </div>
+    <button class="admin-danger" id="adminResetBtn">⚠️ 重置所有数据</button>
+  </div>
+</div>
+
+<!-- ==================== MEMORY MODAL ==================== -->
+<div class="modal-overlay" id="memoryModal">
+  <div class="modal-box">
+    <h3 id="memoryModalTitle">添加回忆</h3>
+    <input type="date" id="memDateInput">
+    <input type="text" id="memTitleInput" placeholder="回忆标题" maxlength="30">
+    <input type="url" id="memImgInput" placeholder="图片URL（可选，也可以直接上传）">
+    <label class="upload-zone" id="memDropZone" for="memFileInput">
+      <input type="file" id="memFileInput" accept="image/*" hidden>
+      <div>
+        <strong>点击上传照片</strong>
+        <span>电脑上也可以把图片拖到这里；会自动压缩后保存在这台设备</span>
+      </div>
+    </label>
+    <div class="image-preview" id="memImagePreview">
+      <img id="memPreviewImg" alt="回忆图片预览">
+      <button type="button" id="memRemoveImageBtn">移除</button>
+    </div>
+    <textarea id="memTextInput" placeholder="写下这段回忆..." maxlength="200"></textarea>
+    <div class="btn-row">
+      <button class="modal-save" id="memSaveBtn">保存</button>
+      <button class="modal-cancel" id="memCancelBtn">取消</button>
+    </div>
+    <button class="admin-danger" id="memDeleteBtn" style="display:none;">删除这条回忆</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ╔══════════════════════════════════════════════════════════╗
+// ║  用户可配置项                                            ║
+// ╚══════════════════════════════════════════════════════════╝
+
+// DeepSeek API Key
+// 注意：不要把真实 API Key 直接写进公开前端代码；建议通过后端代理调用。
+// 保持占位符时，页面会自动使用离线情诗。
+const DEEPSEEK_API_KEY = 'YOUR_DEEPSEEK_API_KEY';
+
+// 默认密码 — 可在此修改，或通过后台管理页面修改（修改后存储在 localStorage）
+const DEFAULT_PASSWORD = 'ourstar2026';
+
+// 默认纪念日
+const DEFAULT_ANNIVERSARY = '2026-02-03';
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  全局状态                                                ║
+// ╚══════════════════════════════════════════════════════════╝
+
+const STORAGE_KEY = 'our_universe_';
+
+function loadData(key, fallback) {
+  try { const v = localStorage.getItem(STORAGE_KEY + key); return v ? JSON.parse(v) : fallback; }
+  catch(e) { return fallback; }
+}
+function saveData(key, value) {
+  try {
+    localStorage.setItem(STORAGE_KEY + key, JSON.stringify(value));
+    return true;
+  } catch(e) {
+    console.warn('本机存储失败:', e);
+    notify('本机存储空间不够了，可以先移除几张大图');
+    return false;
+  }
+}
+
+let state = {
+  password: loadData('password', DEFAULT_PASSWORD),
+  anniversary: loadData('anniversary', DEFAULT_ANNIVERSARY),
+  memories: loadData('memories', null),
+  messages: loadData('messages', []),
+  wishes: loadData('wishes', []),
+  perspective: 'me',
+  nightMode: loadData('nightMode', true),
+  currentPage: 'main',
+  editingMemoryIndex: -1,
+};
+
+function makeMemoryImage(title, from, to) {
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+      <defs>
+        <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stop-color="${from}"/>
+          <stop offset="100%" stop-color="${to}"/>
+        </linearGradient>
+        <filter id="glow"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <rect width="800" height="500" fill="url(#g)"/>
+      <circle cx="130" cy="95" r="3" fill="#fff8d6" opacity=".9"/>
+      <circle cx="670" cy="115" r="4" fill="#fff8d6" opacity=".75"/>
+      <circle cx="570" cy="360" r="2.5" fill="#fff8d6" opacity=".7"/>
+      <circle cx="230" cy="340" r="2" fill="#fff8d6" opacity=".68"/>
+      <path d="M400 174c-44-63-140-16-100 61 24 47 100 94 100 94s76-47 100-94c40-77-56-124-100-61z" fill="#ffe9a7" opacity=".86" filter="url(#glow)"/>
+      <text x="400" y="405" text-anchor="middle" font-size="42" font-family="KaiTi, Microsoft YaHei, serif" fill="#fff8d6">${title}</text>
+    </svg>`;
+  return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+}
+
+// Preset memories
+const PRESET_MEMORIES = [
+  { date: '2026-02-03', title: '第一次相遇', img: makeMemoryImage('第一次相遇', '#1b1b5f', '#ff9a9e'), text: '那天阳光正好，微风不燥。你出现在我面前的那一刻，整个世界都安静了。从此，我的宇宙里多了一颗最亮的星。' },
+  { date: '2026-03-14', title: '第一次一起看海', img: makeMemoryImage('一起看海', '#0f5e9c', '#ffc371'), text: '海浪轻轻拍打着沙滩，你靠在我肩头，我们一起看着夕阳慢慢沉入海平面。那一刻，我希望时间永远停住。' },
+  { date: '2026-04-01', title: '樱花树下的约定', img: makeMemoryImage('樱花约定', '#fbc2eb', '#667eea'), text: '粉色的花瓣随风飘落，我们在樱花树下约定：要一起看遍世间的美好，一起走到时间的尽头。' },
+  { date: '2026-05-01', title: '属于我们的第一个夏天', img: makeMemoryImage('第一个夏天', '#f6d365', '#fda085'), text: '夏天来了，冰淇淋、西瓜、和你。每一个平凡的日子，因为有你而变得闪闪发光。期待与你共度每一个季节。' },
+];
+
+if (state.memories === null) {
+  state.memories = [...PRESET_MEMORIES];
+  saveData('memories', state.memories);
+} else if (Array.isArray(state.memories)) {
+  let migratedImages = false;
+  state.memories = state.memories.map((mem, index) => {
+    if (mem.img && mem.img.includes('picsum.photos')) {
+      migratedImages = true;
+      return { ...mem, img: PRESET_MEMORIES[index % PRESET_MEMORIES.length].img };
+    }
+    return mem;
+  });
+  if (migratedImages) saveData('memories', state.memories);
+}
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  Canvas 星空背景                                         ║
+// ╚══════════════════════════════════════════════════════════╝
+
+const canvas = document.getElementById('starCanvas');
+const ctx = canvas.getContext('2d');
+let stars = [];
+let animFrame;
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+function initStars(count) {
+  stars = [];
+  for (let i = 0; i < count; i++) {
+    stars.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: Math.random() * 1.6 + 0.3,
+      twinkleSpeed: Math.random() * 0.02 + 0.005,
+      twinkleOffset: Math.random() * Math.PI * 2,
+      moveSpeed: Math.random() * 0.15 + 0.03,
+    });
+  }
+}
+function drawStars() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const time = Date.now() * 0.001;
+  for (const s of stars) {
+    const alpha = 0.4 + 0.6 * Math.abs(Math.sin(time * s.twinkleSpeed + s.twinkleOffset));
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+    ctx.fill();
+
+    // slowly move stars upward
+    s.y -= s.moveSpeed;
+    if (s.y < -5) { s.y = canvas.height + 5; s.x = Math.random() * canvas.width; }
+  }
+  animFrame = requestAnimationFrame(drawStars);
+}
+
+resizeCanvas();
+initStars(120);
+drawStars();
+window.addEventListener('resize', () => { resizeCanvas(); initStars(120); });
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  DOM 引用                                                ║
+// ╚══════════════════════════════════════════════════════════╝
+
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => document.querySelectorAll(s);
+
+const loginPage = $('#loginPage');
+const mainPage = $('#mainPage');
+const timelinePage = $('#timelinePage');
+const letterPage = $('#letterPage');
+const spacePage = $('#spacePage');
+const passwordInput = $('#passwordInput');
+const loginBtn = $('#loginBtn');
+const loginError = $('#loginError');
+const counterDisplay = $('#counterDisplay');
+const moonToggle = $('#moonToggle');
+const navTabs = $('.nav-tabs');
+const adminGear = $('#adminGear');
+const adminOverlay = $('#adminOverlay');
+const timelineScroll = $('#timelineScroll');
+const letterPaper = $('#letterPaper');
+const letterContent = $('#letterContent');
+const letterLoading = $('#letterLoading');
+const letterDate = $('#letterDate');
+const stickyBoard = $('#stickyBoard');
+const wishList = $('#wishList');
+const memoryModal = $('#memoryModal');
+const memImgInput = $('#memImgInput');
+const memFileInput = $('#memFileInput');
+const memDropZone = $('#memDropZone');
+const memImagePreview = $('#memImagePreview');
+const memPreviewImg = $('#memPreviewImg');
+const memRemoveImageBtn = $('#memRemoveImageBtn');
+let memoryDraftImage = '';
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  页面导航                                                ║
+// ╚══════════════════════════════════════════════════════════╝
+
+const allPages = [loginPage, mainPage, timelinePage, letterPage, spacePage];
+
+function showPage(page) {
+  if (!page) return;
+  allPages.filter(Boolean).forEach(p => p.classList.remove('active'));
+  page.classList.add('active');
+  const isLogin = page === loginPage;
+  // Show/hide nav and moon toggle
+  if (navTabs) navTabs.style.display = isLogin ? 'none' : 'flex';
+  if (moonToggle) moonToggle.style.display = isLogin ? 'none' : 'flex';
+  state.currentPage = page.id.replace('Page', '');
+  if (!isLogin) setActiveNavTab(state.currentPage);
+
+  // Admin gear visibility
+  updateAdminGearVisibility();
+
+  if (page === loginPage) {
+    passwordInput.focus();
+  }
+  if (page === letterPage) {
+    generateLetter();
+  }
+  if (page === spacePage) {
+    renderMessages();
+    renderWishes();
+  }
+  if (page === timelinePage) {
+    renderTimeline();
+  }
+}
+
+function setActiveNavTab(pageName) {
+  $$('.nav-tab').forEach(t => t.classList.remove('active'));
+  const activeTab = $(`.nav-tab[data-page="${pageName}"]`);
+  if (activeTab) activeTab.classList.add('active');
+}
+
+function updateAdminGearVisibility() {
+  const showAdmin = window.location.search.includes('admin=true') && state.currentPage !== 'login';
+  adminGear.classList.toggle('visible', showAdmin);
+}
+
+// nav tab switching
+$$('.nav-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.page;
+    if (target === 'timeline') showPage(timelinePage);
+    else if (target === 'letter') showPage(letterPage);
+    else if (target === 'space') showPage(spacePage);
+    else showPage(mainPage);
+  });
+});
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  登录逻辑                                                ║
+// ╚══════════════════════════════════════════════════════════╝
+
+function tryLogin() {
+  const input = passwordInput.value.trim();
+  if (input === state.password) {
+    loginError.textContent = '';
+    saveData('unlocked', true);
+    // fade transition
+    loginPage.style.opacity = '0';
+    loginPage.style.transition = 'opacity 0.6s ease';
+    setTimeout(() => {
+      showPage(mainPage);
+      loginPage.style.opacity = '1';
+      passwordInput.value = '';
+    }, 600);
+  } else {
+    loginError.textContent = '密码不是这个哦 ✨';
+    loginPage.querySelector('.login-card').classList.add('shake');
+    setTimeout(() => loginPage.querySelector('.login-card').classList.remove('shake'), 500);
+  }
+}
+
+loginBtn.addEventListener('click', tryLogin);
+passwordInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') tryLogin(); });
+
+// Auto-login check
+const savedUnlocked = loadData('unlocked', false);
+if (savedUnlocked === true) {
+  setTimeout(() => {
+    showPage(mainPage);
+  }, 300);
+} else {
+  // Ensure login page is shown
+  showPage(loginPage);
+}
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  纪念日计时器                                            ║
+// ╚══════════════════════════════════════════════════════════╝
+
+function updateCounter() {
+  const start = new Date(state.anniversary + 'T00:00:00');
+  const now = new Date();
+  const diff = now - start;
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+  counterDisplay.textContent = `${days} 天 ${String(hours).padStart(2,'0')} 时 ${String(minutes).padStart(2,'0')} 分 ${String(seconds).padStart(2,'0')} 秒`;
+}
+setInterval(updateCounter, 1000);
+updateCounter();
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  日/夜模式                                               ║
+// ╚══════════════════════════════════════════════════════════╝
+
+function applyTheme() {
+  if (state.nightMode) {
+    document.body.classList.remove('day-mode');
+    moonToggle.textContent = '🌙';
+  } else {
+    document.body.classList.add('day-mode');
+    moonToggle.textContent = '☀️';
+  }
+}
+applyTheme();
+
+moonToggle.addEventListener('click', () => {
+  state.nightMode = !state.nightMode;
+  saveData('nightMode', state.nightMode);
+  applyTheme();
+});
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  时光轴                                                  ║
+// ╚══════════════════════════════════════════════════════════╝
+
+function renderTimeline() {
+  timelineScroll.innerHTML = state.memories.map((mem, i) => `
+    <div class="memory-card" data-index="${i}">
+      <div class="mem-date">${mem.date}</div>
+      <div class="mem-title">${escHtml(mem.title)}</div>
+      ${mem.img ? `<img class="mem-img" src="${escHtml(mem.img)}" alt="" loading="lazy" onerror="this.style.display='none'">` : ''}
+      <div class="mem-text">${escHtml(mem.text)}</div>
+    </div>
+  `).join('');
+
+  // Long-press to edit
+  let longPressTimer;
+  timelineScroll.querySelectorAll('.memory-card').forEach(card => {
+    card.addEventListener('touchstart', (e) => {
+      longPressTimer = setTimeout(() => {
+        const idx = parseInt(card.dataset.index);
+        openMemoryEditor(idx);
+      }, 5000);
+    }, { passive: true });
+    card.addEventListener('touchend', () => clearTimeout(longPressTimer));
+    card.addEventListener('touchmove', () => clearTimeout(longPressTimer));
+    // Also support mouse long press on desktop
+    card.addEventListener('mousedown', (e) => {
+      longPressTimer = setTimeout(() => {
+        const idx = parseInt(card.dataset.index);
+        openMemoryEditor(idx);
+      }, 5000);
+    });
+    card.addEventListener('mouseup', () => clearTimeout(longPressTimer));
+    card.addEventListener('mouseleave', () => clearTimeout(longPressTimer));
+  });
+}
+
+$('#addMemoryBtn').addEventListener('click', () => openMemoryEditor(-1));
+
+function openMemoryEditor(index) {
+  state.editingMemoryIndex = index;
+  const isEdit = index >= 0;
+  $('#memoryModalTitle').textContent = isEdit ? '编辑回忆' : '添加回忆';
+  if (isEdit) {
+    const mem = state.memories[index];
+    $('#memDateInput').value = mem.date;
+    $('#memTitleInput').value = mem.title;
+    setMemoryImage(mem.img || '');
+    $('#memTextInput').value = mem.text;
+    $('#memDeleteBtn').style.display = 'block';
+  } else {
+    $('#memDateInput').value = '';
+    $('#memTitleInput').value = '';
+    setMemoryImage('');
+    $('#memTextInput').value = '';
+    $('#memDeleteBtn').style.display = 'none';
+  }
+  memoryModal.classList.add('visible');
+}
+
+$('#memSaveBtn').addEventListener('click', () => {
+  const mem = {
+    date: $('#memDateInput').value || new Date().toISOString().slice(0,10),
+    title: $('#memTitleInput').value.trim() || '回忆',
+    img: memoryDraftImage || memImgInput.value.trim(),
+    text: $('#memTextInput').value.trim() || '...',
+  };
+  if (state.editingMemoryIndex >= 0) {
+    state.memories[state.editingMemoryIndex] = mem;
+  } else {
+    state.memories.unshift(mem);
+  }
+  if (!saveData('memories', state.memories)) return;
+  memoryModal.classList.remove('visible');
+  renderTimeline();
+  notify('回忆已保存');
+});
+
+$('#memCancelBtn').addEventListener('click', () => {
+  memoryModal.classList.remove('visible');
+});
+
+$('#memDeleteBtn').addEventListener('click', () => {
+  if (state.editingMemoryIndex >= 0 && confirm('确定要删除这条回忆吗？')) {
+    state.memories.splice(state.editingMemoryIndex, 1);
+    if (!saveData('memories', state.memories)) return;
+    memoryModal.classList.remove('visible');
+    renderTimeline();
+    notify('回忆已删除');
+  }
+});
+
+function setMemoryImage(src) {
+  memoryDraftImage = src || '';
+  memImgInput.value = memoryDraftImage.startsWith('data:image/') ? '' : memoryDraftImage;
+  if (memoryDraftImage) {
+    memPreviewImg.src = memoryDraftImage;
+    memImagePreview.classList.add('visible');
+  } else {
+    memPreviewImg.removeAttribute('src');
+    memImagePreview.classList.remove('visible');
+  }
+}
+
+function compressImageFile(file) {
+  return new Promise((resolve, reject) => {
+    if (!file || !file.type.startsWith('image/')) {
+      reject(new Error('请选择图片文件'));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('图片读取失败'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('图片解析失败'));
+      img.onload = () => {
+        const maxSize = 1200;
+        const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const context = canvas.getContext('2d');
+        context.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.82));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleMemoryImageFile(file) {
+  try {
+    setMemoryImage(await compressImageFile(file));
+    notify('照片已添加，保存回忆后生效');
+  } catch (err) {
+    notify(err.message || '图片上传失败');
+  } finally {
+    memFileInput.value = '';
+  }
+}
+
+memImgInput.addEventListener('input', () => setMemoryImage(memImgInput.value.trim()));
+memFileInput.addEventListener('change', (e) => handleMemoryImageFile(e.target.files?.[0]));
+memRemoveImageBtn.addEventListener('click', () => setMemoryImage(''));
+['dragenter', 'dragover'].forEach(type => {
+  memDropZone.addEventListener(type, (e) => {
+    e.preventDefault();
+    memDropZone.classList.add('drag-over');
+  });
+});
+['dragleave', 'drop'].forEach(type => {
+  memDropZone.addEventListener(type, (e) => {
+    e.preventDefault();
+    memDropZone.classList.remove('drag-over');
+  });
+});
+memDropZone.addEventListener('drop', (e) => {
+  handleMemoryImageFile(e.dataTransfer.files?.[0]);
+});
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  每日情书                                                ║
+// ╚══════════════════════════════════════════════════════════╝
+
+const OFFLINE_POEMS = [
+  "今天阳光穿过窗棂，\n我想起你的眼睛。\n世界很大，大到我们终其一生也走不完；\n世界很小，小到一颗心刚好装下一个人。\n那个人，是你。\n\n—— 写于{date}，想念你的每一天",
+  "风把云吹散，\n却吹不散我对你的思念。\n如果可以，\n我想把每一天都过成诗，\n而你是诗里最美的那个字。\n\n—— {date}，致我最爱的人",
+  "你知道吗？\n宇宙中有无数颗星星，\n但只有一颗，\n让我愿意用一生去仰望。\n那就是你。\n\n—— {date}，你的专属诗人",
+];
+
+async function generateLetter() {
+  const today = new Date().toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric' });
+  letterDate.textContent = today;
+  letterLoading.style.display = 'flex';
+  letterContent.style.display = 'none';
+  letterContent.classList.remove('reveal');
+
+  if (DEEPSEEK_API_KEY === 'YOUR_DEEPSEEK_API_KEY') {
+    showOfflinePoem(today);
+    return;
+  }
+
+  try {
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + DEEPSEEK_API_KEY,
+      },
+      body: JSON.stringify({
+        model: 'deepseek-v4-pro',
+        messages: [
+          { role: 'system', content: `你是一个温柔浪漫的诗人，请用中文为用户写一封给恋人的简短情书，风格随机在温柔、古风、俏皮、日语翻译腔之间切换，需提及今天的日期（${today}）和用户之间的情意，不超过200字。不要使用markdown格式，纯文本输出。` },
+          { role: 'user', content: `请为我写一封给恋人的今日情书，今天是${today}。` }
+        ],
+        max_tokens: 400,
+        temperature: 0.9,
+      }),
+    });
+
+    if (!response.ok) throw new Error('API error: ' + response.status);
+    const data = await response.json();
+    const poem = data.choices?.[0]?.message?.content || '';
+    displayLetter(poem || getOfflinePoem(today));
+  } catch (err) {
+    console.warn('DeepSeek API 调用失败，使用离线情诗:', err.message);
+    showOfflinePoem(today);
+  }
+}
+
+function showOfflinePoem(today) {
+  const poem = getOfflinePoem(today);
+  displayLetter(poem);
+}
+
+function getOfflinePoem(today) {
+  const idx = new Date().getDate() % OFFLINE_POEMS.length;
+  return OFFLINE_POEMS[idx].replace(/\{date\}/g, today);
+}
+
+function displayLetter(text) {
+  letterLoading.style.display = 'none';
+  letterContent.style.display = 'block';
+  letterContent.textContent = text;
+  // Trigger reflow for animation
+  void letterContent.offsetWidth;
+  letterContent.classList.add('reveal');
+}
+
+$('#refreshLetterBtn').addEventListener('click', generateLetter);
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  留言板                                                  ║
+// ╚══════════════════════════════════════════════════════════╝
+
+const STICKY_COLORS = ['#ffe0e0', '#fff5cc', '#e0f0ff', '#e0ffe8', '#ffe8f0', '#f5e0ff'];
+
+function renderMessages() {
+  if (state.messages.length === 0) {
+    stickyBoard.innerHTML = '<div class="empty-state">还没有留言。先写一句今天的心情，让这里慢慢长成你们的小信箱。</div>';
+    return;
+  }
+
+  stickyBoard.innerHTML = state.messages.map((msg, i) => {
+    const color = msg.color || STICKY_COLORS[i % STICKY_COLORS.length];
+    const rotation = msg.rotation || ((Math.random() - 0.5) * 6);
+    return `
+      <div class="sticky-note" data-index="${i}" style="background:${color};transform:rotate(${rotation}deg);">
+        ${escHtml(msg.text)}
+        <div class="sticky-author">—— ${escHtml(msg.author)}</div>
+        <button class="delete-sticky" data-index="${i}">✕</button>
+      </div>
+    `;
+  }).join('');
+
+  stickyBoard.querySelectorAll('.sticky-note').forEach(note => {
+    note.querySelector('.delete-sticky').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = parseInt(note.dataset.index);
+      state.messages.splice(idx, 1);
+      if (!saveData('messages', state.messages)) return;
+      renderMessages();
+    });
+  });
+}
+
+function enableDragOnStickies() {
+  stickyBoard.querySelectorAll('.sticky-note').forEach(note => {
+    let dragging = false, startX, startY, origLeft, origTop;
+    note.addEventListener('touchstart', handleDragStart, { passive: false });
+    note.addEventListener('mousedown', handleDragStart);
+
+    function handleDragStart(e) {
+      if (e.target.classList.contains('delete-sticky')) return;
+      dragging = true;
+      const touch = e.touches ? e.touches[0] : e;
+      startX = touch.clientX;
+      startY = touch.clientY;
+      const rect = note.getBoundingClientRect();
+      origLeft = rect.left;
+      origTop = rect.top;
+      note.style.position = 'fixed';
+      note.style.left = origLeft + 'px';
+      note.style.top = origTop + 'px';
+      note.style.zIndex = '100';
+      note.style.margin = '0';
+
+      function onMove(ev) {
+        if (!dragging) return;
+        ev.preventDefault();
+        const t = ev.touches ? ev.touches[0] : ev;
+        const dx = t.clientX - startX;
+        const dy = t.clientY - startY;
+        note.style.left = (origLeft + dx) + 'px';
+        note.style.top = (origTop + dy) + 'px';
+      }
+      function onUp() {
+        dragging = false;
+        note.style.zIndex = '';
+        document.removeEventListener('touchmove', onMove);
+        document.removeEventListener('touchend', onUp);
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+      document.addEventListener('touchmove', onMove, { passive: false });
+      document.addEventListener('touchend', onUp);
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    }
+  });
+}
+
+$('#sendMsgBtn').addEventListener('click', sendMessage);
+$('#newMsgInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sendMessage();
+});
+
+function sendMessage() {
+  const text = $('#newMsgInput').value.trim();
+  if (!text) return;
+  const author = state.perspective === 'me' ? '我' : '她';
+  state.messages.push({
+    text,
+    author,
+    color: STICKY_COLORS[Math.floor(Math.random() * STICKY_COLORS.length)],
+    rotation: (Math.random() - 0.5) * 6,
+    time: Date.now(),
+  });
+  if (!saveData('messages', state.messages)) return;
+  $('#newMsgInput').value = '';
+  renderMessages();
+  notify('留言已放进小信箱');
+}
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  愿望清单                                                ║
+// ╚══════════════════════════════════════════════════════════╝
+
+function renderWishes() {
+  if (state.wishes.length === 0) {
+    wishList.innerHTML = '<div class="empty-state">还没有愿望。可以从“周末一起散步”“下一次旅行”这种小事开始。</div>';
+    return;
+  }
+
+  // Check for mutual matches
+  const myWishes = new Set(state.wishes.filter(w => w.author === 'me').map(w => w.text));
+  const herWishes = new Set(state.wishes.filter(w => w.author === 'her').map(w => w.text));
+
+  wishList.innerHTML = state.wishes.map((wish, i) => {
+    const matched = (wish.author === 'me' && herWishes.has(wish.text)) ||
+                    (wish.author === 'her' && myWishes.has(wish.text));
+    return `
+      <div class="wish-item${matched ? ' matched' : ''}${wish.done ? ' completed' : ''}">
+        <div class="wish-main">
+          <span>${wish.done ? '✅' : (matched ? '💫' : '✨')}</span>
+          <span class="wish-text">${escHtml(wish.text)}</span>
+          <span class="wish-author">——${escHtml(wish.author === 'me' ? '我' : '她')}</span>
+        </div>
+        ${matched ? '<span class="match-badge">双向奔赴 ✨</span>' : ''}
+        <div class="wish-actions">
+          <button type="button" class="wish-done-btn" data-wish-index="${i}">${wish.done ? '恢复' : '完成'}</button>
+          <button type="button" class="wish-delete-btn" data-wish-index="${i}">删除</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  wishList.querySelectorAll('.wish-done-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.wishIndex);
+      state.wishes[idx].done = !state.wishes[idx].done;
+      if (!saveData('wishes', state.wishes)) return;
+      renderWishes();
+    });
+  });
+
+  wishList.querySelectorAll('.wish-delete-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.wishIndex);
+      state.wishes.splice(idx, 1);
+      if (!saveData('wishes', state.wishes)) return;
+      renderWishes();
+    });
+  });
+}
+
+$('#addWishBtn').addEventListener('click', addWish);
+$('#newWishInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') addWish();
+});
+
+function addWish() {
+  const text = $('#newWishInput').value.trim();
+  if (!text) return;
+  const author = state.perspective === 'me' ? 'me' : 'her';
+  state.wishes.push({ text, author, done: false, time: Date.now() });
+  if (!saveData('wishes', state.wishes)) return;
+  $('#newWishInput').value = '';
+  renderWishes();
+  notify('愿望已加入清单');
+}
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  视角切换                                                ║
+// ╚══════════════════════════════════════════════════════════╝
+
+$$('#perspectiveToggle button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    state.perspective = btn.dataset.perspective;
+    $$('#perspectiveToggle button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderWishes();
+  });
+});
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  后台管理                                                ║
+// ╚══════════════════════════════════════════════════════════╝
+
+// Check for admin mode
+if (window.location.search.includes('admin=true')) {
+  adminGear.classList.add('visible');
+}
+
+adminGear.addEventListener('click', () => {
+  $('#adminAnniversary').value = state.anniversary;
+  $('#adminPassword').value = state.password;
+  adminOverlay.classList.add('visible');
+});
+
+$('#adminCloseBtn').addEventListener('click', () => {
+  adminOverlay.classList.remove('visible');
+});
+
+$('#adminSaveBtn').addEventListener('click', () => {
+  state.anniversary = $('#adminAnniversary').value || DEFAULT_ANNIVERSARY;
+  state.password = $('#adminPassword').value || DEFAULT_PASSWORD;
+  saveData('anniversary', state.anniversary);
+  saveData('password', state.password);
+  updateCounter();
+  adminOverlay.classList.remove('visible');
+});
+
+$('#adminResetBtn').addEventListener('click', () => {
+  if (confirm('确定要重置所有数据吗？这将清除所有回忆、留言、愿望和设置。此操作不可撤销！')) {
+    const keys = Object.keys(localStorage).filter(k => k.startsWith(STORAGE_KEY));
+    keys.forEach(k => localStorage.removeItem(k));
+    state.memories = [...PRESET_MEMORIES];
+    state.messages = [];
+    state.wishes = [];
+    state.anniversary = DEFAULT_ANNIVERSARY;
+    state.password = DEFAULT_PASSWORD;
+    saveData('memories', state.memories);
+    saveData('anniversary', state.anniversary);
+    saveData('password', state.password);
+    saveData('messages', []);
+    saveData('wishes', []);
+    renderTimeline();
+    renderMessages();
+    renderWishes();
+    updateCounter();
+    adminOverlay.classList.remove('visible');
+  }
+});
+
+adminOverlay.addEventListener('click', (e) => {
+  if (e.target === adminOverlay) adminOverlay.classList.remove('visible');
+});
+memoryModal.addEventListener('click', (e) => {
+  if (e.target === memoryModal) memoryModal.classList.remove('visible');
+});
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  工具函数                                                ║
+// ╚══════════════════════════════════════════════════════════╝
+
+function escHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+var toastTimer;
+function notify(message) {
+  const toast = document.getElementById('toast');
+  if (!toast || !message) return;
+  clearTimeout(toastTimer);
+  toast.textContent = message;
+  toast.classList.add('visible');
+  toastTimer = setTimeout(() => toast.classList.remove('visible'), 2200);
+}
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  初始化                                                  ║
+// ╚══════════════════════════════════════════════════════════╝
+
+renderTimeline();
+updateCounter();
+
+// Handle initial URL hash for admin
+if (window.location.search.includes('admin=true')) {
+  adminGear.classList.add('visible');
+}
+
+console.log('🌙 欢迎来到我们的小宇宙 ✨');
+console.log('💡 提示: 在URL后添加 ?admin=true 可开启后台管理入口');
+console.log('🔑 默认密码: ourstar2026');
+console.log('📝 如需启用AI情书，请通过后端代理配置 DeepSeek API Key');
+</script>
+</body>
+</html>
